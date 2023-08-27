@@ -1,0 +1,21 @@
+name: RLPL
+
+channels:
+  - defaults
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python = 3.10.4
+  - numpy = 1.22.2
+  - pandas
+  - matplotlib
+  - pytest
+  - pytorch
+  - pytorch-cuda=11.7
+  - openpyxl
+  - ipykernel
+  - pygraphviz
+  - pip = 22.0.3
+  - pip:
+    - -r requirements.txt
