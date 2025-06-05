@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch
 import torch.optim as optim
 
+
 class DQN():
     """Interacts with and learns from the environment."""
 
@@ -31,11 +32,20 @@ class DQN():
         self.memory = ReplyBuffer
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
+                # For reward normalization
+        self.reward_buffer = []
+        self.reward_mean = 0
+        self.reward_std = 1
     
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
         self.memory.add(state, action, reward, next_state, done)
         
+        # Update reward statistics for normalization
+        self.reward_buffer.append(reward)
+        self.min_reward = min(self.reward_buffer)
+        self.max_reward = max(self.reward_buffer)
+
         # Learn every UPDATE_EVERY time steps.
         self.t_step = (self.t_step + 1) % self.config.UPDATE_EVERY
         if self.t_step == 0:
@@ -43,6 +53,11 @@ class DQN():
             if len(self.memory) > self.config.BATCH_SIZE:
                 experiences = self.memory.sample()
                 self.learn(experiences, self.config.GAMMA)
+
+    def normalize_reward(self, reward):
+        """Normalize reward to be between -1 and 1 using normal distribution statistics."""
+        normalized_reward = (2*(reward-(self.min_reward))/((self.max_reward-self.min_reward)))-1 # Assuming rewards are in the range [-1000, 200] x′′=2x−minxmaxx−minx−1
+        return normalized_reward
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
@@ -74,16 +89,19 @@ class DQN():
         """
         states, actions, rewards, next_states, dones = experiences
 
+        #normalized_rewards = self.normalize_reward(rewards)
+        normalized_rewards = rewards
+
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states 
-        Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
+        Q_targets = normalized_rewards + (gamma * Q_targets_next * (1 - dones))
 
         # Get expected Q values from local model
         Q_expected = self.qnetwork_local(states).gather(1, actions)
 
         # Compute loss
-        loss = F.huber_loss(Q_expected, Q_targets, delta = 2.0)
+        loss = F.mse_loss(Q_expected, Q_targets)
         # Minimize the loss
         self.optimizer.zero_grad()
         loss.backward()
@@ -103,3 +121,19 @@ class DQN():
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+
+    def behavior_cloning(self, state, action):
+        """Behavior cloning method to train the agent."""
+        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+        action = torch.tensor(action).unsqueeze(0).to(self.device)
+
+        self.qnetwork_local.train()
+        self.optimizer.zero_grad()
+
+        # Forward pass
+        action_values = self.qnetwork_local(state)
+        loss = F.mse_loss(action_values, action.float())
+
+        # Backward pass and optimization
+        loss.backward()
+        self.optimizer.step()

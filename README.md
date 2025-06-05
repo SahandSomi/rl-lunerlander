@@ -9,7 +9,7 @@ Reinforcement learning (RL) planning in construction involves training agents to
 3.	Streamlit will create a port and open that network URL to see the app. If are connecting to a remote server, you need to forward the port to open it locally.
 
 # Prerequisites
-  - Python 3.6 or higher
+  - Python 3.11 or higher
   - pytorch------------> Deep learning general library.
   - torchvision--------> Deep learning for computer vision.
   - torchaudio---------> Deep learning for audio and signal.

@@ -70,7 +70,7 @@ if 'num_episodes_to_run' not in st.session_state:
 
 # --- Environment Options & Device ---
 AVAILABLE_ENVS = {
-    "LunarLander-v2": {"state_size": 8, "action_size": 4},
+    "LunarLander-v3": {"state_size": 8, "action_size": 4},
     "CartPole-v1": {"state_size": 4, "action_size": 2}
 }
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -81,7 +81,7 @@ def initialize_or_reset_components(env_name):
         state_size = AVAILABLE_ENVS[env_name]["state_size"]
         action_size = AVAILABLE_ENVS[env_name]["action_size"]
 
-        st.session_state.config = DQNConfig()
+    st.session_state.config = DQNConfig()
     st.session_state.replay_buffer = ReplayBuffer(action_size, st.session_state.config.BUFFER_SIZE, st.session_state.config.BATCH_SIZE, DEVICE, st.session_state.config.SEED)
     st.session_state.q_network_local = QNetwork(state_size, action_size, st.session_state.config.SEED).to(DEVICE)
     st.session_state.q_network_target = QNetwork(state_size, action_size, st.session_state.config.SEED).to(DEVICE)
@@ -105,8 +105,8 @@ def initialize_or_reset_components(env_name):
 
     st.session_state.training_started = True
     st.session_state.training_in_progress = False # Reset this flag
-        initial_state, _ = st.session_state.environment.reset(seed=st.session_state.config.SEED)
-        st.session_state.current_game_state = initial_state
+    initial_state, _ = st.session_state.environment.reset(seed=st.session_state.config.SEED)
+    st.session_state.current_game_state = initial_state
     return initial_state
 
 def initialize_or_reset_components_callback():
@@ -283,36 +283,36 @@ def load_checkpoint(filepath):
         try:
             st.session_state.agent.qnetwork_local.load_state_dict(checkpoint_data['qnetwork_local_state_dict'])
             st.session_state.agent.qnetwork_target.load_state_dict(checkpoint_data['qnetwork_target_state_dict'])
-        st.session_state.agent.optimizer.load_state_dict(checkpoint_data['optimizer_state_dict'])
+            st.session_state.agent.optimizer.load_state_dict(checkpoint_data['optimizer_state_dict'])
 
-        st.session_state.current_episode_number = checkpoint_data.get('current_episode_number', 0)
-        st.session_state.total_steps = checkpoint_data.get('total_steps', 0)
-        st.session_state.current_epsilon = checkpoint_data.get('current_epsilon', st.session_state.epsilon_start)
-        st.session_state.episode_rewards = checkpoint_data.get('episode_rewards', [])
-        st.session_state.epsilon_values = checkpoint_data.get('epsilon_values', [])
+            st.session_state.current_episode_number = checkpoint_data.get('current_episode_number', 0)
+            st.session_state.total_steps = checkpoint_data.get('total_steps', 0)
+            st.session_state.current_epsilon = checkpoint_data.get('current_epsilon', st.session_state.epsilon_start)
+            st.session_state.episode_rewards = checkpoint_data.get('episode_rewards', [])
+            st.session_state.epsilon_values = checkpoint_data.get('epsilon_values', [])
 
-        if 'buffer_memory' in checkpoint_data and hasattr(st.session_state.replay_buffer, 'memory'):
-            buffer_size_on_load = st.session_state.config.BUFFER_SIZE if st.session_state.config else 10000 # Fallback buffer size
-            st.session_state.replay_buffer.memory = deque(checkpoint_data['buffer_memory'], maxlen=buffer_size_on_load)
+            if 'buffer_memory' in checkpoint_data and hasattr(st.session_state.replay_buffer, 'memory'):
+                buffer_size_on_load = st.session_state.config.BUFFER_SIZE if st.session_state.config else 10000 # Fallback buffer size
+                st.session_state.replay_buffer.memory = deque(checkpoint_data['buffer_memory'], maxlen=buffer_size_on_load)
 
-        st.session_state.training_started = True
-        st.session_state.training_in_progress = False # Ensure not auto-starting
+            st.session_state.training_started = True
+            st.session_state.training_in_progress = False # Ensure not auto-starting
 
-        # Reset current_game_state from the loaded environment
-        if st.session_state.environment:
-            current_seed = st.session_state.config.SEED if st.session_state.config else None
-            st.session_state.current_game_state, _ = st.session_state.environment.reset(seed=current_seed)
-            # Render the first frame of the loaded state for UI update
-            frame_to_show = st.session_state.environment.render()
-            update_ui_elements(frame_to_show)
-        else:
-            update_ui_elements(None)
+            # Reset current_game_state from the loaded environment
+            if st.session_state.environment:
+                current_seed = st.session_state.config.SEED if st.session_state.config else None
+                st.session_state.current_game_state, _ = st.session_state.environment.reset(seed=current_seed)
+                # Render the first frame of the loaded state for UI update
+                frame_to_show = st.session_state.environment.render()
+                update_ui_elements(frame_to_show)
+            else:
+                update_ui_elements(None)
 
-        st.success(f"Checkpoint loaded from {filepath}")
-        st.rerun()
+            st.success(f"Checkpoint loaded from {filepath}")
+            st.rerun()
 
-    except Exception as e:
-        st.error(f"Error applying checkpoint data: {e}. Agent components might be partially loaded or mismatched.")
+        except Exception as e:
+            st.error(f"Error applying checkpoint data: {e}. Agent components might be partially loaded or mismatched.")
 
 
 # --- UI Update Function ---
