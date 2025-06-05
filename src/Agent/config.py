@@ -8,4 +8,4 @@ class DQN_soft_update():
         self.TAU = 1e-3              # for soft update of target parameters
         self.LR = 1e-3               # learning rate 
         self.UPDATE_EVERY = 4        # how often to update the network
-        self.SEED = 0
+        self.SEED = 1
